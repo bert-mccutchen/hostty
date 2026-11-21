@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "serverb"
+
+exit Serverb::CLI.new(argv: ARGV).run
