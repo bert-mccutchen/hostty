@@ -17,10 +17,18 @@ ZIG_TARGETS = {
   "aarch64-linux-gnu" => "aarch64-linux-gnu"
 }.freeze
 
+def ghostty_revision
+  @ghostty_revision ||= `git rev-parse HEAD:vendor/ghostty`.strip
+end
+
 def build_libghostty(prefix:, target: nil)
+  stamp = File.join(prefix, "ghostty-revision")
+  return if File.exist?(stamp) && File.read(stamp) == ghostty_revision
+
   cross = target ? ["-Dtarget=#{target}", "-Dcpu=baseline"] : []
   sh "zig", "build", "--build-file", "vendor/ghostty/build.zig",
     "-Demit-lib-vt", "-Doptimize=ReleaseFast", *cross, "--prefix", prefix
+  File.write(stamp, ghostty_revision)
 end
 
 desc "Build libghostty-vt for this machine into vendor/libghostty"
