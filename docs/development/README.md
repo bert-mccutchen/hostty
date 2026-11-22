@@ -11,6 +11,7 @@
 
 - [Setup](#setup)
 - [Platform Gems](#platform-gems)
+- [Releasing](#releasing)
 - [Running Hostty](#running-hostty)
 - [Tests](#tests)
 - [Linting](#linting)
@@ -39,7 +40,15 @@ Hostty needs Ruby 3.2 or later. Its runtime dependencies are ruby-nginx and ffi.
 
 `bundle exec rake build` builds the gem without the library. That gem uses a libghostty-vt from the package manager of the system.
 
-CI builds every platform gem on each push and keeps them as build artifacts.
+CI builds every platform gem on each push and keeps them as build artifacts, so a broken build shows before a release.
+
+## Releasing
+
+1. Change `Hostty::VERSION` in `lib/hostty/version.rb`.
+2. Merge the change into `main`.
+3. Publish a GitHub release from `main`, with a tag for the version.
+
+The release starts the "Ruby Gem" workflow. It builds the four platform gems and the gem without the library, then pushes all of them to RubyGems and to GitHub Packages.
 
 ## Running Hostty
 
