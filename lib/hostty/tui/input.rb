@@ -1,0 +1,69 @@
+# frozen_string_literal: true
+
+module Hostty
+  module Tui
+    class Input
+      def initialize
+        @pending = +"".b
+      end
+
+      def parse(data)
+        @pending << data.b
+        events = []
+        events << next_event until @pending.empty? || incomplete_mouse?
+        events.compact
+      end
+
+      private
+
+      CTRL_C = "\x03".b
+      SHIFT_TAB = "\e[Z".b
+      SPECIAL = /\x03|\e\[<|\e\[Z/n
+      MOUSE = /\A\e\[<(\d+);(\d+);(\d+)([Mm])/n
+      INCOMPLETE_MOUSE = /\A\e\[<[\d;]*\z/n
+      BUTTONS = [:left, :middle, :right, nil].freeze
+      WHEEL_BUTTONS = [:wheel_up, :wheel_down, nil, nil].freeze
+      MODIFIER_BITS = {shift: 4, alt: 8, ctrl: 16}.freeze
+      private_constant :CTRL_C, :SHIFT_TAB, :SPECIAL, :MOUSE, :INCOMPLETE_MOUSE, :BUTTONS, :WHEEL_BUTTONS, :MODIFIER_BITS
+
+      def incomplete_mouse?
+        INCOMPLETE_MOUSE.match?(@pending)
+      end
+
+      def next_event
+        index = @pending.index(SPECIAL)
+        return [:keys, take(index || @pending.size)] unless index&.zero?
+        return [:interrupt, take(1)] if @pending.start_with?(CTRL_C)
+        return take(SHIFT_TAB.size) && [:next_tab] if @pending.start_with?(SHIFT_TAB)
+
+        match = MOUSE.match(@pending)
+        return [:keys, take(@pending.size)] unless match
+
+        take(match[0].size)
+        mouse_event(match)
+      end
+
+      def take(size)
+        @pending.slice!(0, size)
+      end
+
+      def mouse_event(match)
+        code = match[1].to_i
+        event = MouseEvent.new(
+          action: mouse_action(code, match[4]),
+          button: (code.anybits?(64) ? WHEEL_BUTTONS : BUTTONS)[code & 0b11],
+          row: match[3].to_i - 1,
+          col: match[2].to_i - 1,
+          modifiers: MODIFIER_BITS.filter_map { |name, bit| name if code.anybits?(bit) }
+        )
+        [:mouse, event] if event.button
+      end
+
+      def mouse_action(code, final)
+        return :release if final == "m"
+
+        code.anybits?(32) ? :motion : :press
+      end
+    end
+  end
+end

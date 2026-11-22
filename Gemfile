@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in serverb.gemspec
+# Specify your gem's dependencies in hostty.gemspec
 gemspec
 
 gem "irb"

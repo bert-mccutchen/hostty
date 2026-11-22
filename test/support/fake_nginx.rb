@@ -1,21 +1,17 @@
 # frozen_string_literal: true
 
 class FakeNginx
-  attr_reader :calls
+  attr_reader :added
 
   def initialize(fail_on: nil)
     @fail_on = fail_on
-    @calls = []
+    @added = []
   end
 
   def add!(options)
     raise Ruby::Nginx::AbortError, "Declined the sudo prompt." if options[:domain] == fail_on
 
-    calls << [:add, options[:domain]]
-  end
-
-  def remove!(options)
-    calls << [:remove, options[:domain]]
+    added << options[:domain]
   end
 
   private

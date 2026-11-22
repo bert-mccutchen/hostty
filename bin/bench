@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'HELP'
+Usage: bin/bench [megabytes]
+
+Feeds generated process output through Hostty::Ghostty::Screen (80x24,
+64 KB reads, the same size the PTY reader uses) and prints CPU time, MB/s,
+and lines/s for each kind of output. Then times how long one frame read
+takes, the call the renderer makes for every frame, at 80x24 and 200x50.
+
+  megabytes   Size of each run. Default: 20.
+  -h, --help  Print this help text.
+HELP
+}
+
+case "${1-}" in
+-h | --help) usage && exit 0 ;;
+esac
+
+exec ruby -I"$(dirname "$0")/../lib" -rhostty -rhostty/ghostty/screen -e '
+  screen_class = Hostty::Ghostty::Screen
+  clock = -> { Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID) }
+  target = Integer(ARGV[0]) * 1024 * 1024
+  chunk = 65_536
+  sources = {
+    "plain log lines" => ->(i) { "I, [2026-11-21T10:00:00 ##{i}]  INFO -- : Completed 200 OK in 12ms\r\n" },
+    "colored Rails log lines" => ->(i) { "  \e[1m\e[36mOrder Load (0.4ms)\e[0m  \e[1m\e[34mSELECT * FROM orders WHERE id = #{i}\e[0m\r\n" },
+    "progress bar with carriage returns" => ->(i) { "\r\e[32m#{"#" * (i % 50)}\e[0m#{" " * (50 - i % 50)} #{i % 100}%" }
+  }
+  puts "Ruby #{RUBY_VERSION}, #{screen_class}, #{ARGV[0]} MB per run"
+  sources.each do |name, source|
+    data = +""
+    lines = 0
+    (data << source.call(lines); lines += 1) while data.bytesize < target
+    chunks = (0...data.bytesize).step(chunk).map { |o| data.byteslice(o, chunk) }
+    screen = screen_class.new(rows: 24, cols: 80)
+    GC.start
+    start = clock.call
+    chunks.each { |c| screen.feed(c) }
+    cpu = clock.call - start
+    printf("%-36s %6.2f s cpu  %6.2f MB/s  %9.0f lines/s\n", name, cpu, data.bytesize / 1048576.0 / cpu, lines / cpu)
+  end
+  [[24, 80], [50, 200]].each do |rows, cols|
+    screen = screen_class.new(rows:, cols:)
+    line = sources["colored Rails log lines"]
+    rows.times { |i| screen.feed(line.call(i)) }
+    frames = 500
+    start = clock.call
+    frames.times do |i|
+      screen.feed(line.call(i))
+      screen.lines
+    end
+    per_frame = (clock.call - start) / frames * 1000
+    printf("%-36s %6.2f ms per frame, one new line each\n", "frame read #{cols}x#{rows}", per_frame)
+  end
+' "${1:-20}"

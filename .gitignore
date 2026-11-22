@@ -6,3 +6,6 @@
 /pkg/
 /spec/reports/
 /tmp/
+/vendor/libghostty/
+/lib/hostty/ghostty/libghostty-vt.*
+.DS_Store

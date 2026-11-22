@@ -1,0 +1,18 @@
+skip_used_ports: true
+processes:
+  web:
+    command: >-
+      exec ruby -rsocket -e '
+      $stdout.sync = true;
+      server = TCPServer.new("127.0.0.1", Integer(ENV.fetch("PORT")));
+      puts "Listening on port #{ENV["PORT"]}";
+      loop do
+      client = server.accept;
+      puts client.gets;
+      nil until client.gets.to_s.strip.empty?;
+      client.write("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 3\r\nConnection: close\r\n\r\nok\n");
+      client.close;
+      end'
+    domain: "hostty.test"
+  btop: "btop"
+  irb: "exec env -u RUBYOPT -u BUNDLE_GEMFILE ruby -rirb -e 'IRB.send(:easter_egg, :dancing); IRB.start'"

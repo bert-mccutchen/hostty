@@ -6,6 +6,7 @@ class CLITestCase < Minitest::Test
     @stdout = StringIO.new
     @stderr = StringIO.new
     @nginx = FakeNginx.new
+    @base_port = free_port
   end
 
   def teardown
@@ -14,21 +15,46 @@ class CLITestCase < Minitest::Test
 
   private
 
-  attr_reader :dir, :stdout, :stderr, :nginx
+  attr_reader :dir, :stdout, :stderr, :nginx, :base_port
 
   def write_config(yaml)
     File.write(config_path, yaml)
   end
 
   def config_path
-    File.join(dir, Serverb::Config::FILE_NAME)
+    File.join(dir, Hostty::Config::FILE_NAME)
   end
 
-  def serverb(*args, out: stdout, nginx: self.nginx)
-    Serverb::CLI.new(argv: ["--file", config_path, *args], nginx:, stdout: out, stderr:).run
+  def hostty_argv(*args)
+    ["--file", config_path, "--port", base_port.to_s, *args]
+  end
+
+  def hostty(*args, out: stdout, nginx: self.nginx)
+    Hostty::CLI.new(argv: hostty_argv(*args), nginx:, stdout: out, stderr:).run
   end
 
   def lines_for(name)
     stdout.string.lines.grep(/ #{name}\s+\| /).map { |line| line.split("| ", 2).last.chomp }
+  end
+
+  def free_port
+    loop do
+      port = rand(20_000..40_000)
+      return port if [port, port + 1, port + 100, port + 200].all? { |candidate| bindable?(candidate) }
+    end
+  end
+
+  def bindable?(port)
+    TCPServer.new("0.0.0.0", port).close
+    true
+  rescue Errno::EADDRINUSE
+    false
+  end
+
+  def hold_port(port)
+    server = TCPServer.new("0.0.0.0", port)
+    yield
+  ensure
+    server&.close
   end
 end

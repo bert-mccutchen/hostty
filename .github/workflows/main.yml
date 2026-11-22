@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
 
   pull_request:
 
@@ -12,10 +14,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    runs-on: ${{ matrix.os }}
+    name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
     strategy:
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
         ruby:
           - '3.3.5'
 
@@ -23,10 +28,44 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+          submodules: true
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.1
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+      - name: Build libghostty-vt
+        run: bundle exec rake libghostty
       - name: Run the default task
         run: bundle exec rake
+
+  native-gems:
+    runs-on: macos-latest
+    name: Platform gems
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: true
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.1
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.5'
+          bundler-cache: true
+      - name: Build the platform gems
+        run: bundle exec rake native:all build
+      - name: Upload the gems
+        uses: actions/upload-artifact@v4
+        with:
+          name: gems
+          path: pkg/*.gem

@@ -5,74 +5,75 @@ require "test_helper"
 class CLIStartTest < CLITestCase
   def test_runs_each_process_with_its_port_and_stops_the_rest_when_one_exits
     write_config(<<~YAML)
-      web: "echo port=$PORT; exit 3"
-      api:
-        command: "exec sleep 30"
-        port: 9000
+      processes:
+        web: "echo port=$PORT; exit 3"
+        api: "echo port=$PORT; exec sleep 30"
     YAML
 
-    assert_equal 3, serverb
+    assert_equal 3, hostty
 
-    assert_equal ["port=5000"], lines_for("web")
-    assert_includes lines_for("serverb"), "web exited with code 3."
-    assert_includes lines_for("serverb"), "Stopping all processes."
-    assert_includes lines_for("serverb"), "api exited with code 143."
+    assert_equal ["port=#{base_port}"], lines_for("web")
+    assert_includes lines_for("hostty"), "web exited with code 3."
+    assert_includes lines_for("hostty"), "Stopping all processes."
+    assert_includes lines_for("hostty"), "api exited with code 143."
   end
 
-  def test_starts_from_the_port_option_and_passes_the_env_setting
+  def test_passes_the_env_setting
     write_config(<<~YAML)
-      web:
-        command: "echo port=$PORT color=$COLOR"
-        env:
-          COLOR: "blue"
+      processes:
+        web:
+          command: "echo color=$COLOR"
+          env:
+            COLOR: "blue"
     YAML
 
-    assert_equal 0, serverb("--port", "3000")
-    assert_equal ["port=3000 color=blue"], lines_for("web")
+    assert_equal 0, hostty
+    assert_equal ["color=blue"], lines_for("web")
   end
 
-  def test_adds_domains_before_the_processes_start_and_removes_them_after
+  def test_adds_domains_before_the_processes_start
     write_config(<<~YAML)
-      web:
-        command: "echo started"
-        domain: "shop.test"
-        ssl: true
-      worker: "exec sleep 30"
+      processes:
+        web:
+          command: "echo started"
+          domain: "shop.test"
+          ssl: true
+        jobs: "exec sleep 30"
     YAML
 
-    assert_equal 0, serverb
+    assert_equal 0, hostty
 
-    assert_equal [[:add, "shop.test"], [:remove, "shop.test"]], nginx.calls
-    assert_operator stdout.string.index("Adding https://shop.test for web on port 5000."), :<, stdout.string.index("started")
-    assert_includes lines_for("serverb"), "Removing https://shop.test."
+    assert_equal ["shop.test"], nginx.added
+    assert_operator stdout.string.index("Adding https://shop.test for web on port #{base_port}."), :<, stdout.string.index("started")
   end
 
-  def test_removes_added_domains_and_starts_nothing_when_a_domain_fails
+  def test_starts_nothing_when_a_domain_fails
     write_config(<<~YAML)
-      web:
-        command: "echo started"
-        domain: "shop.test"
-      api:
-        command: "echo started"
-        domain: "api.shop.test"
+      processes:
+        web:
+          command: "echo started"
+          domain: "shop.test"
+        docs:
+          command: "echo started"
+          domain: "docs.shop.test"
     YAML
 
-    assert_equal 1, serverb(nginx: FakeNginx.new(fail_on: "api.shop.test"))
+    assert_equal 1, hostty(nginx: FakeNginx.new(fail_on: "docs.shop.test"))
 
-    assert_equal "serverb: Declined the sudo prompt.\n", stderr.string
+    assert_equal "hostty: Declined the sudo prompt.\n", stderr.string
     refute_includes stdout.string, "started"
-    assert_includes lines_for("serverb"), "Removing http://shop.test."
   end
 
   def test_stops_every_process_and_its_child_processes_on_ctrl_c
     write_config(<<~YAML)
-      web: "exec sleep 30"
-      worker: "sleep 30 & echo child=$!; wait"
+      processes:
+        web: "exec sleep 30"
+        jobs: "sleep 30 & echo child=$!; wait"
     YAML
 
     reader, writer = IO.pipe
     writer.sync = true
-    run = Thread.new { serverb(out: writer) }
+    run = Thread.new { hostty(out: writer) }
     child_pid = reader.each_line.lazy.filter_map { |line| line[/child=(\d+)/, 1] }.first.to_i
 
     Process.kill("INT", Process.pid)
@@ -85,35 +86,47 @@ class CLIStartTest < CLITestCase
   end
 
   def test_reports_a_missing_config_file
-    assert_equal 1, serverb
+    assert_equal 1, hostty
 
-    assert_equal "serverb: No config file at #{config_path}.\n", stderr.string
+    assert_equal "hostty: No config file at #{config_path}.\n", stderr.string
+  end
+
+  def test_reports_a_config_file_without_processes
+    write_config(<<~YAML)
+      web: "bin/rails server"
+    YAML
+
+    assert_equal 1, hostty
+
+    assert_equal "hostty: The config file at #{config_path} must list at least one process under processes.\n", stderr.string
   end
 
   def test_reports_an_invalid_process
     write_config(<<~YAML)
-      web:
-        domain: "shop.test"
+      processes:
+        web:
+          domain: "shop.test"
     YAML
 
-    assert_equal 1, serverb
+    assert_equal 1, hostty
 
-    assert_equal "serverb: web needs a command.\n", stderr.string
+    assert_equal "hostty: web needs a command.\n", stderr.string
   end
 
   def test_reports_two_processes_with_the_same_domain
     write_config(<<~YAML)
-      web:
-        command: "exec sleep 30"
-        domain: "shop.test"
-      api:
-        command: "exec sleep 30"
-        domain: "shop.test"
+      processes:
+        web:
+          command: "exec sleep 30"
+          domain: "shop.test"
+        docs:
+          command: "exec sleep 30"
+          domain: "shop.test"
     YAML
 
-    assert_equal 1, serverb
+    assert_equal 1, hostty
 
-    assert_equal "serverb: More than one process uses the domain shop.test.\n", stderr.string
+    assert_equal "hostty: More than one process uses the domain shop.test.\n", stderr.string
   end
 
   private
