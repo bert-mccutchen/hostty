@@ -73,6 +73,8 @@ jobs:
         ruby-version: '4.0'
     - name: Log in to RubyGems
       uses: rubygems/configure-rubygems-credentials@v2.1.0
+      with:
+        api-token: ${{ secrets.RUBYGEMS_API_KEY }}
     - name: Publish to RubyGems
       run: |
         for gem in pkg/*.gem; do
