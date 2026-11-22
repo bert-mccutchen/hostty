@@ -33,7 +33,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.3.5'
+        ruby-version: '4.0.10'
         bundler-cache: true
     - name: Build the gems
       run: bundle exec rake ${{ matrix.tasks }}
@@ -61,7 +61,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.3.5'
+        ruby-version: '4.0.10'
     - name: Publish to GPR
       run: |
         mkdir -p $HOME/.gem
