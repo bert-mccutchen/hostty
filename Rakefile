@@ -53,4 +53,10 @@ namespace :native do
 
   desc "Build the gem for every platform"
   task all: ZIG_TARGETS.keys
+
+  desc "Build the gems for every macOS platform"
+  task darwin: ZIG_TARGETS.keys.grep(/darwin/)
+
+  desc "Build the gems for every Linux platform"
+  task linux: ZIG_TARGETS.keys.grep(/linux/)
 end
