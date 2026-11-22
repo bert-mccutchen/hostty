@@ -73,11 +73,12 @@ processes:
 bundle exec rake test
 ```
 
-The tests use Minitest and run hostty through `Hostty::CLI`, the same entry point as `exe/hostty`:
+The tests use Minitest. Most run hostty through `Hostty::CLI`, the same entry point as `exe/hostty`:
 
 | Directory | What it tests |
 | --- | --- |
 | `test/cli/` | Hostty end to end: the config, the domains, plain output, the tabs, and stopping. |
+| `test/contracts/` | The [front end and launcher contract](./architecture.md#front-ends), once for each front end and each launcher. A new one gets the same checks when its test class includes the contract module from `test/support/`. |
 | `test/ghostty/` | The screen of each tab, which Hostty reads from libghostty-vt. |
 | `test/support/` | Helpers for the tests above. |
 

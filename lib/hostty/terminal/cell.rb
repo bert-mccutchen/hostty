@@ -19,11 +19,11 @@ module Hostty
       end
 
       def self.blank(style = Style.plain)
-        blanks[style.bg] ||= new(char: " ", style: style.background)
+        blanks.fetch(style.bg) { new(char: " ", style: style.background) }
       end
 
       def self.blanks
-        @blanks ||= {}
+        @blanks ||= Flyweight.new
       end
       private_class_method :blanks
 

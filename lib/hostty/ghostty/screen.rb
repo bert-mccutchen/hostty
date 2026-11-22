@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require_relative "library"
+require_relative "style_decoder"
+require_relative "raw_cell"
+require_relative "cell_reader"
 require_relative "frame"
 require_relative "mouse"
 

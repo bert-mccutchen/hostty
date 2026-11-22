@@ -11,23 +11,24 @@ module Hostty
         @rows = rows
         @cols = cols
         @pty = Pty.new
-        @screen = Ghostty::Screen.new(rows:, cols:, reply: pty, bell: method(:ring))
+        @bell = Bell.new
+        @screen = Ghostty::Screen.new(rows:, cols:, reply: pty, bell:)
+        @lifecycle = Lifecycle.new(name:, screen:)
         @offset = 0
-        @running = false
-        @bell = false
-        @rang = false
       end
 
-      def running? = @running
+      def running? = lifecycle.running?
 
-      def bell? = @bell
+      def bell? = bell.ringing?
 
       def io = pty.reader
 
+      def subscribe(listener)
+        @listener = listener
+      end
+
       def start(process)
-        notify("\e[2m[hostty] Starting #{name}.") if @exit_code
-        @exit_code = nil
-        @running = true
+        lifecycle.start
         pty.start(process, rows:, cols:)
       end
 
@@ -36,9 +37,18 @@ module Hostty
       end
 
       def read
-        data = pty.read
-        screen.feed(data) if data
-        !data&.empty?
+        listener.output(self) if pull
+        bell.relay(listener)
+      end
+
+      def exited(exit_code, manager:)
+        nil while pull && io
+        lifecycle.exited(exit_code, manager:)
+        bell.relay(listener)
+      end
+
+      def restart(manager)
+        lifecycle.restart(manager)
       end
 
       def write(data)
@@ -72,27 +82,8 @@ module Hostty
         selection.text(history_lines(selection.rows)) if selecting?
       end
 
-      def exited(exit_code)
-        nil while read && io
-        @exit_code = exit_code
-        @running = false
-        notify("\e[31m[hostty] #{name} exited with code #{exit_code}.")
-      end
-
-      def request_restart
-        @restart_requested = true
-      end
-
-      def take_restart_request
-        @restart_requested.tap { @restart_requested = false }
-      end
-
-      def take_ring
-        @rang.tap { @rang = false }
-      end
-
       def clear_bell
-        @bell = false
+        bell.silence
       end
 
       def scroll(lines)
@@ -114,10 +105,16 @@ module Hostty
 
       private
 
-      attr_reader :rows, :cols, :pty, :selection
+      attr_reader :rows, :cols, :pty, :bell, :lifecycle, :listener, :selection
 
       def selecting?
         !selection.nil? && !selection.empty?
+      end
+
+      def pull
+        data = pty.read
+        screen.feed(data) if data
+        !data&.empty?
       end
 
       def history_row(row)
@@ -131,15 +128,6 @@ module Hostty
           page_offset = (size - first).clamp(0, size)
           screen.lines(offset: page_offset).each_with_index { |cells, index| lines[size - page_offset + index] = cells }
         end
-      end
-
-      def ring
-        @bell = true
-        @rang = true
-      end
-
-      def notify(text)
-        screen.feed("\e[0m\r\n#{text}\e[0m\r\n")
       end
     end
   end

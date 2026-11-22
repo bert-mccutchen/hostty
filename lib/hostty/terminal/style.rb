@@ -43,12 +43,11 @@ module Hostty
       end
 
       def self.shared(attributes)
-        styles.clear if styles.size > SHARED_LIMIT
-        styles[attributes.values] ||= new(**attributes)
+        styles.fetch(attributes.values) { new(**attributes) }
       end
 
       def self.styles
-        @styles ||= {plain.to_h.values => plain}
+        @styles ||= Flyweight.new.tap { |styles| styles.fetch(plain.to_h.values) { plain } }
       end
       private_class_method :styles
 
@@ -65,8 +64,7 @@ module Hostty
         strikethrough: 9,
         overline: 53
       }.freeze
-      SHARED_LIMIT = 1024
-      private_constant :FLAG_CODES, :SHARED_LIMIT
+      private_constant :FLAG_CODES
 
       def color_codes(color, base:, extended:)
         case color

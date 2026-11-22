@@ -34,14 +34,14 @@ module Hostty
 
       def next_event
         index = @pending.index(SPECIAL)
-        return [:keys, take(index || @pending.size)] unless index&.zero?
-        return [:interrupt, take(1)] if @pending.start_with?(CTRL_C)
-        return take(SHIFT_TAB.size) && [:next_tab] if @pending.start_with?(SHIFT_TAB)
-        return take(FOCUS_IN.size) && [:focus, true] if @pending.start_with?(FOCUS_IN)
-        return take(FOCUS_OUT.size) && [:focus, false] if @pending.start_with?(FOCUS_OUT)
+        return Events::Keys.new(bytes: take(index || @pending.size)) unless index&.zero?
+        return Events::Interrupt.new(bytes: take(1)) if @pending.start_with?(CTRL_C)
+        return take(SHIFT_TAB.size) && Events::NextTab.new if @pending.start_with?(SHIFT_TAB)
+        return take(FOCUS_IN.size) && Events::Focus.new(focused: true) if @pending.start_with?(FOCUS_IN)
+        return take(FOCUS_OUT.size) && Events::Focus.new(focused: false) if @pending.start_with?(FOCUS_OUT)
 
         match = MOUSE.match(@pending)
-        return [:keys, take(@pending.size)] unless match
+        return Events::Keys.new(bytes: take(@pending.size)) unless match
 
         take(match[0].size)
         mouse_event(match)
@@ -60,7 +60,7 @@ module Hostty
           col: match[2].to_i - 1,
           modifiers: MODIFIER_BITS.filter_map { |name, bit| name if code.anybits?(bit) }
         )
-        [:mouse, event] if event.button
+        Events::MouseReport.new(mouse: event) if event.button
       end
 
       def mouse_action(code, final)

@@ -11,7 +11,7 @@ module Hostty
     def add
       processes.each do |process|
         output.notice("Adding #{process.url} for #{process.name} on port #{process.port}.")
-        nginx.add!(process.nginx_options)
+        nginx.add!(NginxOptions.new(process:).to_h)
       end
     end
 

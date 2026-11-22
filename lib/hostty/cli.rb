@@ -54,7 +54,7 @@ module Hostty
     end
 
     def config
-      @config ||= Config.new(path: options[:file], base_port: options[:port])
+      @config ||= Config::Loader.call(path: options[:file], base_port: options[:port])
     end
 
     def output
