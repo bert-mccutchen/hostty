@@ -64,6 +64,8 @@ Hostty starts the processes in the order of the file. The tabs and the [ports](#
 | `ssl` | No | Serve the domain over HTTPS. Defaults to `false`. |
 | `log` | No | Write NGINX access and error logs for the domain to `~/.ruby-nginx/logs`. Defaults to `false`. |
 | `host` | No | The address that the domain points to and that NGINX sends requests to. Defaults to `127.0.0.1`. |
+| `root` | No | The directory NGINX serves static files from, relative to the config file. See [NGINX Configs](./domains.md#nginx-configs). |
+| `template` | No | The NGINX server config for the domain: `"rails"`, `"proxy"`, or the path to an ERB file. See [NGINX Configs](./domains.md#nginx-configs). |
 | `port` | No | A port number, or `"random"`. See [Ports](#ports). |
 | `env` | No | More environment variables for the process. |
 
@@ -119,6 +121,7 @@ Hostty stops before it adds a domain or starts a process when the config file ha
 | A `skip_used_ports` that is not `true` or `false` | `skip_used_ports must be true or false.` |
 | A process with no command | `<name> needs a command.` |
 | A process setting hostty does not know | `<name> has unknown settings: <settings>.` |
+| A `root` or `template` that is not text | `<name> needs a text value for its <setting>.` |
 | A port that is not a number from 1 to 65535, or `"random"` | `<name> needs a port from 1 to 65535, or "random".` |
 | A port in use, with `skip_used_ports: false` | `Port <port> for <name> is in use. Free the port, or set skip_used_ports to true.` |
 | A port number that is in use | `Port <port> for <name> is in use. Free the port, or change the port of <name>.` |

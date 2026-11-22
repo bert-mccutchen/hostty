@@ -40,7 +40,8 @@ module Hostty
       {
         domain:,
         port:,
-        root_path:,
+        root_path: static_root,
+        template_path: template&.path,
         host: settings["host"],
         ssl: settings["ssl"],
         log: settings["log"]
@@ -49,9 +50,10 @@ module Hostty
 
     private
 
-    KEYS = %w[command domain port ssl log host env].freeze
+    KEYS = %w[command domain port ssl log host root template env].freeze
+    PATH_KEYS = %w[root template].freeze
     PORTS = 1..65_535
-    private_constant :KEYS, :PORTS
+    private_constant :KEYS, :PATH_KEYS, :PORTS
 
     attr_reader :settings, :default_port, :ports
 
@@ -61,7 +63,22 @@ module Hostty
       raise ConfigError, "#{name} needs a command." unless present_string?(command)
       raise ConfigError, "#{name} needs a port from 1 to 65535, or \"random\"." unless valid_port_setting?
       raise ConfigError, "#{name} needs a text value for its domain." unless domain.nil? || present_string?(domain)
+      raise ConfigError, "#{name} needs a text value for its #{invalid_path_keys.join(" and ")}." if invalid_path_keys.any?
       raise ConfigError, "#{name} needs a list of names and values for its env." unless settings.fetch("env", {}).is_a?(Hash)
+    end
+
+    def invalid_path_keys
+      PATH_KEYS.select { |key| settings.key?(key) && !present_string?(settings[key]) }
+    end
+
+    def template
+      @template ||= NginxTemplate.new(name: settings["template"], base_path: root_path) if settings["template"]
+    end
+
+    def static_root
+      return File.expand_path(settings["root"], root_path) if settings["root"]
+
+      template&.static_root || root_path
     end
 
     def unknown_keys

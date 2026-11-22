@@ -47,6 +47,77 @@ class CLIStartTest < CLITestCase
     assert_operator stdout.string.index("Adding https://shop.test for web on port #{base_port}."), :<, stdout.string.index("started")
   end
 
+  def test_passes_the_root_and_template_relative_to_the_config_file
+    write_config(<<~YAML)
+      processes:
+        web:
+          command: "echo started"
+          domain: "shop.test"
+          root: "public"
+          template: "config/nginx.conf.erb"
+        docs:
+          command: "echo started"
+          domain: "docs.shop.test"
+    YAML
+
+    assert_equal 0, hostty
+
+    assert_equal File.join(dir, "public"), nginx.options["shop.test"][:root_path]
+    assert_equal File.join(dir, "config/nginx.conf.erb"), nginx.options["shop.test"][:template_path]
+    assert_equal dir, nginx.options["docs.shop.test"][:root_path]
+    refute nginx.options["docs.shop.test"].key?(:template_path)
+  end
+
+  def test_uses_a_built_in_template_by_name
+    write_config(<<~YAML)
+      processes:
+        web:
+          command: "echo started"
+          domain: "shop.test"
+          template: "rails"
+        docs:
+          command: "echo started"
+          domain: "docs.shop.test"
+          template: "proxy"
+    YAML
+
+    assert_equal 0, hostty
+
+    assert_path_exists nginx.options["shop.test"][:template_path]
+    assert_equal File.join(dir, "public"), nginx.options["shop.test"][:root_path]
+    assert_path_exists nginx.options["docs.shop.test"][:template_path]
+    assert_equal dir, nginx.options["docs.shop.test"][:root_path]
+  end
+
+  def test_uses_the_root_setting_over_the_root_of_a_built_in_template
+    write_config(<<~YAML)
+      processes:
+        web:
+          command: "echo started"
+          domain: "shop.test"
+          template: "rails"
+          root: "static"
+    YAML
+
+    assert_equal 0, hostty
+
+    assert_equal File.join(dir, "static"), nginx.options["shop.test"][:root_path]
+  end
+
+  def test_reports_a_template_that_is_not_text
+    write_config(<<~YAML)
+      processes:
+        web:
+          command: "echo started"
+          domain: "shop.test"
+          template: 3
+    YAML
+
+    assert_equal 1, hostty
+
+    assert_equal "hostty: web needs a text value for its template.\n", stderr.string
+  end
+
   def test_starts_nothing_when_a_domain_fails
     write_config(<<~YAML)
       processes:

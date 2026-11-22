@@ -10,6 +10,7 @@
 ### Contents
 
 - [What a Domain Does](#what-a-domain-does)
+- [NGINX Configs](#nginx-configs)
 - [When Hostty Adds a Domain](#when-hostty-adds-a-domain)
 - [Prompts](#prompts)
 - [When a Domain Fails](#when-a-domain-fails)
@@ -41,7 +42,46 @@ flowchart LR
     nginx -- "localhost:5000" --> web[web process]
 ```
 
-The [settings](./configuration.md#settings) page lists `ssl`, `log`, and `host`.
+The [process settings](./configuration.md#process-settings) table lists `ssl`, `log`, `host`, `root`, and `template`.
+
+## NGINX Configs
+
+The `template` setting picks the NGINX server config for the domain. It takes the name of a built-in config or the path to your own file:
+
+| `template` | What NGINX does |
+| --- | --- |
+| Not set | Serves a file from `root` when one matches the path, and sends every other request to the process. |
+| `"rails"` | Serves a file from `root` when one matches the path, and sends every other request to the process. `root` defaults to `public`. Allows uploads up to 4 GB and waits 30 minutes for a response, so a debugger can pause a request. |
+| `"proxy"` | Sends every request to the process, and serves no files itself. Use it for a dev server that serves its own files, such as Jekyll or Vite. |
+| A path, such as `"config/nginx.conf.erb"` | Uses your own file. The path is relative to the config file. |
+
+```yaml
+processes:
+  web:
+    command: "bin/rails server -p $PORT"
+    domain: "shop.test"
+    ssl: true
+    template: "rails"
+  docs:
+    command: "bundle exec jekyll serve --port $PORT"
+    domain: "docs.shop.test"
+    template: "proxy"
+```
+
+Set `root` for any config that serves files. Without it, NGINX serves every file in the project directory, including secrets such as `.env`.
+
+### Writing Your Own
+
+Start from the [ruby-nginx default template](https://github.com/bert-mccutchen/ruby-nginx/blob/main/lib/ruby/nginx/templates/nginx.conf.erb). The template can use these values:
+
+- `name`: a name for the upstream block, made from the domain.
+- `options[:domain]`, `options[:port]`, `options[:host]`, and `options[:root_path]`.
+- `options[:ssl]`, `options[:ssl_certificate_path]`, and `options[:ssl_certificate_key_path]`.
+- `options[:log]`, `options[:access_log_path]`, and `options[:error_log_path]`.
+- `options[:temp_path]`: a directory NGINX can write temp files to. Set `proxy_temp_path` and `client_body_temp_path` to it, or NGINX can fail with a permissions error.
+- `nginx_version`: the installed NGINX version.
+
+When the file does not exist, hostty prints the error and starts no process. A file named `rails` or `proxy` needs a path such as `"./rails"`, so hostty does not read it as a built-in config.
 
 ## When Hostty Adds a Domain
 
