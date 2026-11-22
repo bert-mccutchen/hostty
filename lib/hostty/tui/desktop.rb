@@ -12,6 +12,10 @@ module Hostty
         copy_with_command(text)
       end
 
+      def ring
+        io.write("\a")
+      end
+
       def open(url)
         Process.detach(Process.spawn(OPENER, url, out: File::NULL, err: File::NULL))
       rescue SystemCallError

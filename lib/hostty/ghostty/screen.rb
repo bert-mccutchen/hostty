@@ -7,8 +7,9 @@ require_relative "mouse"
 module Hostty
   module Ghostty
     class Screen
-      def initialize(rows:, cols:, reply: nil)
+      def initialize(rows:, cols:, reply: nil, bell: nil)
         @reply = reply
+        @bell = bell
         @rows = rows
         @cols = cols
         @terminal = Library.create(:ghostty_terminal_new, :ghostty_terminal_free, cols, rows)
@@ -16,11 +17,14 @@ module Hostty
         @mouse = Mouse.new(terminal:)
         limit_scrollback
         send_replies
+        send_bells
       end
 
       def application_cursor_keys? = mode?(Library::MODE_CURSOR_KEYS)
 
       def bracketed_paste? = mode?(Library::MODE_BRACKETED_PASTE)
+
+      def focus_events? = mode?(Library::MODE_FOCUS_EVENTS)
 
       def mouse_tracking? = !read(:uint8, Library::TERMINAL_DATA_MOUSE_TRACKING).zero?
 
@@ -63,7 +67,7 @@ module Hostty
       CELL_HEIGHT = 16
       private_constant :SCROLLBACK_LINES, :SCROLLBACK_BYTES, :CELL_WIDTH, :CELL_HEIGHT
 
-      attr_reader :reply, :rows, :cols, :terminal, :frame, :mouse
+      attr_reader :reply, :bell, :rows, :cols, :terminal, :frame, :mouse
 
       def limit_scrollback
         set_size(Library::TERMINAL_OPT_SCROLLBACK_MAX_LINES, SCROLLBACK_LINES)
@@ -80,6 +84,11 @@ module Hostty
         end
 
         Library.ghostty_terminal_set(terminal, Library::TERMINAL_OPT_WRITE_PTY, @write_pty)
+      end
+
+      def send_bells
+        @ring = FFI::Function.new(:void, %i[pointer pointer]) { |_terminal, _userdata| bell&.call }
+        Library.ghostty_terminal_set(terminal, Library::TERMINAL_OPT_BELL, @ring)
       end
 
       def read(type, data)

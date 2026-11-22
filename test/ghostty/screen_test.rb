@@ -148,6 +148,14 @@ class GhosttyScreenTest < Minitest::Test
     assert_equal "oklink", text.first
   end
 
+  def test_calls_the_bell_for_each_bel_character
+    rings = 0
+    screen = Hostty::Ghostty::Screen.new(rows: 4, cols: 10, bell: -> { rings += 1 })
+    screen.feed("a\ab\a")
+
+    assert_equal 2, rings
+  end
+
   def test_reflows_wrapped_lines_after_a_resize
     feed("1234567890\r\nsecond")
     @screen.resize(rows: 2, cols: 4)

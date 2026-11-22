@@ -1,11 +1,16 @@
 # frozen_string_literal: true
 
 class FakeDesktop
-  attr_reader :opened
+  attr_reader :opened, :rings
 
   def initialize
     @copies = Queue.new
     @opened = []
+    @rings = 0
+  end
+
+  def ring
+    @rings += 1
   end
 
   def copy(text)

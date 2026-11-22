@@ -194,6 +194,58 @@ class CLITuiTest < CLITestCase
     assert_equal 0, quit
   end
 
+  def test_marks_a_tab_yellow_on_a_bell_until_it_is_selected
+    write_config(<<~YAML)
+      processes:
+        web: "echo web ready; exec sleep 30"
+        jobs: "sleep 0.5; printf 'jobs ready\\\\a'; exec sleep 30"
+    YAML
+
+    start_tui
+    driver.wait_for_text("web ready")
+    dot = driver.row_text(0).index("jobs") - 2
+
+    driver.wait_for_color(0, dot, 3)
+    assert_equal 0, desktop.rings
+
+    driver.click("jobs")
+    driver.wait_for_color(0, dot, 2)
+    assert_equal 0, quit
+  end
+
+  def test_rings_the_terminal_bell_while_the_window_is_out_of_focus
+    write_config(<<~YAML)
+      processes:
+        web: "echo web ready; exec sleep 30"
+        jobs: "sleep 1; printf 'jobs ready\\\\a'; exec sleep 30"
+    YAML
+
+    start_tui
+    driver.wait_for_text("web ready")
+    driver.type("\e[O")
+
+    driver.wait_for_color(0, driver.row_text(0).index("jobs") - 2, 3)
+    assert_equal 1, desktop.rings
+    assert_equal 0, quit
+  end
+
+  def test_sends_focus_changes_to_a_program_that_asks_for_them
+    write_config(<<~'YAML')
+      processes:
+        vim: >-
+          exec ruby -rio/console -e 'STDOUT.sync = true;
+          print "\e[?1004hready\r\n";
+          STDIN.raw { loop { print STDIN.readpartial(100).inspect, "\r\n" } }'
+    YAML
+
+    start_tui
+    driver.wait_for_text("ready")
+    driver.type("\e[O")
+
+    driver.wait_for_text('"\e[O"')
+    assert_equal 0, quit
+  end
+
   def test_sends_one_ctrl_c_to_the_selected_process
     write_config(<<~YAML)
       processes:

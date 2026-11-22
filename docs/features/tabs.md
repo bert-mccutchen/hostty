@@ -39,6 +39,8 @@ Use Ctrl-C to stop
 
 - The top row shows a tab per process. The selected tab is blue.
 - The dot in each tab is green while the process runs and red after it exits.
+- When a process in another tab rings the bell, the dot of its tab blinks yellow until you select that tab.
+- When a process rings the bell while your terminal window is out of focus, hostty also rings your terminal's bell. Your terminal clears its own bell mark when you return to the window.
 - When the selected process has a [domain](./domains.md), the right end of the top row shows its URL. Click the URL to open it in your browser.
 - The middle rows show the selected process, as a terminal would show it.
 - The bottom row is the help bar. `[restart]` is a button.

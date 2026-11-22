@@ -61,6 +61,10 @@ class TuiDriver
     wait_until("a highlight at row #{row}, column #{col}") { screen.lines[row][col].style.inverse }
   end
 
+  def wait_for_color(row, col, color)
+    wait_until("color #{color} at row #{row}, column #{col}") { screen.lines[row][col].style.fg == color }
+  end
+
   def wait_for_text(text, count: 1)
     wait_until("#{text.inspect} #{count} times") { visible_text.scan(text).size >= count }
   end

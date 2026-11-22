@@ -42,6 +42,8 @@ Hostty draws these from the screen:
 | Screens | The main screen with its scrollback, and the alternate screen. |
 | Resize | Wrapped lines on the main screen reflow when the window changes width. |
 | Replies | libghostty-vt answers queries such as the cursor position and the device attributes, and Hostty writes the answer back to the process. |
+| The bell | Hostty marks the tab, and it rings your terminal's bell while the window is out of focus. See [the screen of the tabs](./tabs.md#the-screen). |
+| Focus changes | A program that asks for focus changes, such as `vim`, gets them while its tab is selected. |
 
 ## What Hostty Does Not Pass On
 
@@ -53,7 +55,7 @@ libghostty-vt tracks more than Hostty draws or forwards:
 | Images, such as Kitty graphics | Nothing in the place of the image. |
 | Links | The link text, without a link. |
 | Cursor shape | Your terminal's own cursor. |
-| Window titles, the bell, and clipboard writes | Nothing. |
+| Window titles and clipboard writes | Nothing. |
 | Keyboard modes other than application cursor keys and bracketed paste | Keys arrive in the form your terminal sends them. |
 
 ## Speed

@@ -15,4 +15,5 @@ processes:
       end'
     domain: "hostty.test"
   btop: "btop"
+  bell: "while true; do sleep 10; printf 'ding\\a\\n'; done"
   irb: "exec env -u RUBYOPT -u BUNDLE_GEMFILE ruby -rirb -e 'IRB.send(:easter_egg, :dancing); IRB.start'"

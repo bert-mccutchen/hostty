@@ -13,6 +13,7 @@ module Hostty
         @input = Input.new
         @renderer = Renderer.new(io: stdout)
         @outer_modes = {}
+        @focused = true
       end
 
       def launch_for(process)
@@ -24,6 +25,7 @@ module Hostty
           until @exit_code
             wait_for_io(manager)
             autoscroll_when_due
+            blink_when_due
             check_size
             render_when_due
           end
@@ -41,14 +43,17 @@ module Hostty
       AUTOSCROLL_SECONDS = 0.025
       AUTOSCROLL_SPEEDUP_SECONDS = 0.5
       AUTOSCROLL_MAX_LINES = 10
-      ENTER = "\e[?1049h\e[?1002h\e[?1006h\e[?25l\e[2J"
-      LEAVE = "\e[?1006l\e[?1002l\e[?2004l\e[?1l\e[0m\e[?25h\e[?1049l"
+      BLINK_SECONDS = 0.5
+      ENTER = "\e[?1049h\e[?1002h\e[?1006h\e[?1004h\e[?25l\e[2J"
+      LEAVE = "\e[?1004l\e[?1006l\e[?1002l\e[?2004l\e[?1l\e[0m\e[?25h\e[?1049l"
       OUTER_MODES = {application_cursor_keys?: 1, bracketed_paste?: 2004}.freeze
-      private_constant :FRAME_SECONDS, :IDLE_SECONDS, :DOUBLE_PRESS_SECONDS, :SCROLL_LINES, :AUTOSCROLL_SECONDS, :AUTOSCROLL_SPEEDUP_SECONDS, :AUTOSCROLL_MAX_LINES, :ENTER, :LEAVE, :OUTER_MODES
+      private_constant :FRAME_SECONDS, :IDLE_SECONDS, :DOUBLE_PRESS_SECONDS, :SCROLL_LINES, :AUTOSCROLL_SECONDS, :AUTOSCROLL_SPEEDUP_SECONDS, :AUTOSCROLL_MAX_LINES, :BLINK_SECONDS, :ENTER, :LEAVE, :OUTER_MODES
 
       attr_reader :stdin, :stdout, :desktop, :rows, :cols, :panes, :input, :renderer
 
       def selected = panes[@selected]
+
+      def bell? = panes.any?(&:bell?)
 
       def layout
         @layout ||= Layout.new(names: panes.map(&:name), rows:, cols:)
@@ -94,6 +99,9 @@ module Hostty
           interrupt(bytes)
         in [:next_tab]
           @selected = (@selected + 1) % panes.size
+        in [:focus, focused]
+          @focused = focused
+          selected.send_focus(focused)
         in [:keys, bytes]
           selected.write(bytes)
         in [:mouse, mouse]
@@ -145,6 +153,18 @@ module Hostty
         selected.scroll(@autoscroll * autoscroll_lines)
         selected.select_to(**@pointer)
         @dirty = true
+      end
+
+      def blink_when_due
+        return unless bell? && clock - @blinked_at.to_f >= BLINK_SECONDS
+
+        @blinked_at = clock
+        renderer.blink
+        @dirty = true
+      end
+
+      def blink_wait
+        (@blinked_at.to_f + BLINK_SECONDS - clock).clamp(0, BLINK_SECONDS)
       end
 
       def autoscroll_lines
@@ -213,6 +233,7 @@ module Hostty
 
           pane = panes.find { |candidate| candidate.name == event.name }
           pane.exited(event.exit_code)
+          relay_bell(pane)
           manager.start(pane.name) if pane.take_restart_request
           @dirty = true
         end
@@ -222,6 +243,14 @@ module Hostty
         return unless pane
 
         @dirty = true if pane.read && pane.equal?(selected)
+        relay_bell(pane)
+      end
+
+      def relay_bell(pane)
+        return unless pane.take_ring
+
+        desktop.ring unless @focused
+        @dirty = true
       end
 
       def quit
@@ -243,6 +272,7 @@ module Hostty
         return unless @dirty && frame_due?
 
         sync_outer_modes
+        selected.clear_bell
         renderer.render(layout:, panes:, selected:)
         @dirty = false
         @rendered_at = clock
@@ -254,6 +284,7 @@ module Hostty
 
       def select_timeout
         return AUTOSCROLL_SECONDS if @selecting && @autoscroll && !@dirty
+        return blink_wait if bell? && !@dirty
         return IDLE_SECONDS unless @dirty
 
         [FRAME_SECONDS - (clock - (@rendered_at || 0)), 0].max

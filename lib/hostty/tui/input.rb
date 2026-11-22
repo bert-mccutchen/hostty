@@ -18,13 +18,15 @@ module Hostty
 
       CTRL_C = "\x03".b
       SHIFT_TAB = "\e[Z".b
-      SPECIAL = /\x03|\e\[<|\e\[Z/n
+      FOCUS_IN = "\e[I".b
+      FOCUS_OUT = "\e[O".b
+      SPECIAL = /\x03|\e\[<|\e\[[ZIO]/n
       MOUSE = /\A\e\[<(\d+);(\d+);(\d+)([Mm])/n
       INCOMPLETE_MOUSE = /\A\e\[<[\d;]*\z/n
       BUTTONS = [:left, :middle, :right, nil].freeze
       WHEEL_BUTTONS = [:wheel_up, :wheel_down, nil, nil].freeze
       MODIFIER_BITS = {shift: 4, alt: 8, ctrl: 16}.freeze
-      private_constant :CTRL_C, :SHIFT_TAB, :SPECIAL, :MOUSE, :INCOMPLETE_MOUSE, :BUTTONS, :WHEEL_BUTTONS, :MODIFIER_BITS
+      private_constant :CTRL_C, :SHIFT_TAB, :FOCUS_IN, :FOCUS_OUT, :SPECIAL, :MOUSE, :INCOMPLETE_MOUSE, :BUTTONS, :WHEEL_BUTTONS, :MODIFIER_BITS
 
       def incomplete_mouse?
         INCOMPLETE_MOUSE.match?(@pending)
@@ -35,6 +37,8 @@ module Hostty
         return [:keys, take(index || @pending.size)] unless index&.zero?
         return [:interrupt, take(1)] if @pending.start_with?(CTRL_C)
         return take(SHIFT_TAB.size) && [:next_tab] if @pending.start_with?(SHIFT_TAB)
+        return take(FOCUS_IN.size) && [:focus, true] if @pending.start_with?(FOCUS_IN)
+        return take(FOCUS_OUT.size) && [:focus, false] if @pending.start_with?(FOCUS_OUT)
 
         match = MOUSE.match(@pending)
         return [:keys, take(@pending.size)] unless match

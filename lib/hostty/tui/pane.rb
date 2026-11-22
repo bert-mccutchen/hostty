@@ -11,12 +11,16 @@ module Hostty
         @rows = rows
         @cols = cols
         @pty = Pty.new
-        @screen = Ghostty::Screen.new(rows:, cols:, reply: pty)
+        @screen = Ghostty::Screen.new(rows:, cols:, reply: pty, bell: method(:ring))
         @offset = 0
         @running = false
+        @bell = false
+        @rang = false
       end
 
       def running? = @running
+
+      def bell? = @bell
 
       def io = pty.reader
 
@@ -41,6 +45,10 @@ module Hostty
         @offset = 0
         @selection = nil
         pty.write(data)
+      end
+
+      def send_focus(focused)
+        pty.write(focused ? "\e[I" : "\e[O") if screen.focus_events?
       end
 
       def send_mouse(event)
@@ -79,6 +87,14 @@ module Hostty
         @restart_requested.tap { @restart_requested = false }
       end
 
+      def take_ring
+        @rang.tap { @rang = false }
+      end
+
+      def clear_bell
+        @bell = false
+      end
+
       def scroll(lines)
         @offset = (offset + lines).clamp(0, screen.scrollback_size)
       end
@@ -115,6 +131,11 @@ module Hostty
           page_offset = (size - first).clamp(0, size)
           screen.lines(offset: page_offset).each_with_index { |cells, index| lines[size - page_offset + index] = cells }
         end
+      end
+
+      def ring
+        @bell = true
+        @rang = true
       end
 
       def notify(text)

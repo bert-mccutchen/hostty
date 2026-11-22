@@ -12,6 +12,10 @@ module Hostty
         @previous = []
       end
 
+      def blink
+        @blink_hidden = !@blink_hidden
+      end
+
       def render(layout:, panes:, selected:)
         rows = [tab_row(layout, panes, selected), *pane_rows(selected), help_row(layout, selected)]
         frame = +""
@@ -26,8 +30,9 @@ module Hostty
       SELECTED_TAB = "\e[0;1;97;48;5;24m"
       RUNNING_DOT = "\e[32m"
       EXITED_DOT = "\e[31m"
+      BELL_DOT = "\e[33m"
       RESET = "\e[0m"
-      private_constant :BAR, :SELECTED_TAB, :RUNNING_DOT, :EXITED_DOT, :RESET
+      private_constant :BAR, :SELECTED_TAB, :RUNNING_DOT, :EXITED_DOT, :BELL_DOT, :RESET
 
       attr_reader :io
 
@@ -41,8 +46,13 @@ module Hostty
 
       def tab_label(pane, selected)
         style = pane.equal?(selected) ? SELECTED_TAB : BAR
-        dot = pane.running? ? RUNNING_DOT : EXITED_DOT
-        "#{style} #{dot}●#{style} #{pane.name} "
+        "#{style} #{dot(pane)}#{style} #{pane.name} "
+      end
+
+      def dot(pane)
+        return "#{BELL_DOT}#{@blink_hidden ? " " : "●"}" if pane.bell?
+
+        "#{pane.running? ? RUNNING_DOT : EXITED_DOT}●"
       end
 
       def pane_rows(pane)
