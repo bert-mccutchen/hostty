@@ -71,9 +71,9 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: '4.0'
+    - name: Log in to RubyGems
+      uses: rubygems/configure-rubygems-credentials@v2.1.0
     - name: Publish to RubyGems
-      env:
-        GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
       run: |
         for gem in pkg/*.gem; do
           gem push "$gem"
