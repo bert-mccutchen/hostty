@@ -1,10 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="./docs/assets/hostty-dark-static.svg">
-    <source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/hostty-light-static.svg">
-    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/hostty-dark.svg">
-    <img src="./docs/assets/hostty-light.svg" alt="Hostty" width="300">
-  </picture>
+  <img src="./docs/assets/hostty-light.svg#gh-light-mode-only" alt="Hostty" width="300">
+  <img src="./docs/assets/hostty-dark.svg#gh-dark-mode-only" alt="Hostty" width="300">
 </p>
 
 # Hostty
