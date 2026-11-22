@@ -25,9 +25,9 @@ def build_libghostty(prefix:, target: nil)
   stamp = File.join(prefix, "ghostty-revision")
   return if File.exist?(stamp) && File.read(stamp) == ghostty_revision
 
-  cross = target ? ["-Dtarget=#{target}", "-Dcpu=baseline"] : []
+  cross = target ? ["-Dtarget=#{target}"] : []
   sh "zig", "build", "--build-file", "vendor/ghostty/build.zig",
-    "-Demit-lib-vt", "-Doptimize=ReleaseFast", *cross, "--prefix", prefix
+    "-Demit-lib-vt", "-Doptimize=ReleaseFast", "-Dcpu=baseline", *cross, "--prefix", prefix
   File.write(stamp, ghostty_revision)
 end
 
