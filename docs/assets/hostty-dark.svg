@@ -2,24 +2,89 @@
   <defs>
     <!-- One ghost, 120 wide, with a ">_" face. The bottom has two ripples and rounded corners. -->
     <path id="body" d="M0 60 C0 27 27 0 60 0 C93 0 120 27 120 60 L120 122 C120 134 112 142 104 142 C96 142 90 132 82 132 S68 142 60 142 S46 132 38 132 S24 142 16 142 C8 142 0 134 0 122 Z"/>
-    <g id="face" fill="none" stroke="#1a1b26" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="32,54 52,70 32,86"/>
-      <line x1="62" y1="88" x2="88" y2="88"/>
-    </g>
+    <!-- The "_" of the face. Each ghost draws its own ">" so it can blink at its own time. -->
+    <line id="cursor" x1="62" y1="76" x2="88" y2="76"/>
+    <!-- Each ghost floats up and down, one after the other. The body stretches while it rises and shrinks while it falls, so the bottom trails the head. -->
+    <style>
+      .face {
+        fill: none;
+        stroke: #1a1b26;
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .bob, .stretch, .shift {
+        animation-duration: 1.6s;
+        animation-iteration-count: infinite;
+        animation-timing-function: ease-in-out;
+      }
+      .bob {
+        animation-name: bob;
+        animation-delay: var(--delay);
+      }
+      /* The stretch runs a quarter cycle behind the bob, so it is tallest while the ghost rises fastest. */
+      .stretch {
+        animation-name: stretch;
+        animation-delay: calc(var(--delay) - 1.2s);
+        transform-box: fill-box;
+        transform-origin: 50% 0;
+      }
+      /* The face keeps its shape. It moves with the stretch at its own height, about 58px below the top of the head. */
+      .shift {
+        animation-name: shift;
+        animation-delay: calc(var(--delay) - 1.2s);
+      }
+      @keyframes bob {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+      @keyframes stretch {
+        0%, 100% { transform: scaleY(1.04); }
+        50% { transform: scaleY(0.96); }
+      }
+      @keyframes shift {
+        0%, 100% { transform: translateY(2.3px); }
+        50% { transform: translateY(-2.3px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bob, .stretch, .shift { animation: none; }
+      }
+    </style>
   </defs>
 
-  <!-- Ghosts -->
-  <g transform="translate(60 183)">
-    <use href="#body" fill="#9ece6a"/>
-    <use href="#face"/>
+  <!-- Ghosts. To blink, the ">" flattens into a "-" and opens again. Each ghost blinks on a different loop length, so the blinks do not line up. -->
+  <g transform="translate(60 183)" style="--delay: 0s">
+    <g class="bob">
+      <use class="stretch" href="#body" fill="#9ece6a"/>
+      <g class="shift face">
+        <polyline points="32,42 52,58 32,74">
+          <animate attributeName="points" dur="4s" repeatCount="indefinite" keyTimes="0;0.97;0.985;1" values="32,42 52,58 32,74;32,42 52,58 32,74;32,58 52,58 32,58;32,42 52,58 32,74"/>
+        </polyline>
+        <use href="#cursor"/>
+      </g>
+    </g>
   </g>
-  <g transform="translate(196 183)">
-    <use href="#body" fill="#7aa2f7"/>
-    <use href="#face"/>
+  <g transform="translate(196 183)" style="--delay: -0.2s">
+    <g class="bob">
+      <use class="stretch" href="#body" fill="#7aa2f7"/>
+      <g class="shift face">
+        <polyline points="32,42 52,58 32,74">
+          <animate attributeName="points" dur="5.2s" repeatCount="indefinite" keyTimes="0;0.977;0.9885;1" values="32,42 52,58 32,74;32,42 52,58 32,74;32,58 52,58 32,58;32,42 52,58 32,74"/>
+        </polyline>
+        <use href="#cursor"/>
+      </g>
+    </g>
   </g>
-  <g transform="translate(332 183)">
-    <use href="#body" fill="#bb9af7"/>
-    <use href="#face"/>
+  <g transform="translate(332 183)" style="--delay: -0.4s">
+    <g class="bob">
+      <use class="stretch" href="#body" fill="#bb9af7"/>
+      <g class="shift face">
+        <polyline points="32,42 52,58 32,74">
+          <animate attributeName="points" dur="4.6s" repeatCount="indefinite" keyTimes="0;0.974;0.987;1" values="32,42 52,58 32,74;32,42 52,58 32,74;32,58 52,58 32,58;32,42 52,58 32,74"/>
+        </polyline>
+        <use href="#cursor"/>
+      </g>
+    </g>
   </g>
 
   <!-- Line under the ghosts -->
