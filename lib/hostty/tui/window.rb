@@ -17,7 +17,11 @@ module Hostty
         return if [rows, cols] == [layout.rows, layout.cols]
 
         layout.resize(rows:, cols:)
-        tabs.each { |pane| pane.resize(rows: layout.pane_rows, cols:) }
+
+        tabs.each do |pane|
+          pane.resize(rows: layout.pane_rows, cols:)
+        end
+
         canvas.reset
       end
 

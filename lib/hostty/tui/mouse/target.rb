@@ -23,7 +23,9 @@ module Hostty
         end
 
         def drag(event)
-          point(event).tap { |point| selected.select_to(**point) }
+          point(event).tap do |point|
+            selected.select_to(**point)
+          end
         end
 
         def release(event)

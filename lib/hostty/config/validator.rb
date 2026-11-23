@@ -8,7 +8,11 @@ module Hostty
       end
 
       def call
-        failure = rules.find { |rule| !rule.valid? }
+        failure =
+          rules.find do |rule|
+            !rule.valid?
+          end
+
         raise ConfigError, failure.message if failure
       end
 

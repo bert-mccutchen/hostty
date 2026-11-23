@@ -10,7 +10,12 @@ module Hostty
       def start(process)
         reader, writer = IO.pipe
         pid = spawn_process(process, writer)
-        @reader_thread = Thread.new { forward(process.name, reader) }
+
+        @reader_thread =
+          Thread.new do
+            forward(process.name, reader)
+          end
+
         pid
       ensure
         writer&.close
@@ -44,7 +49,9 @@ module Hostty
       end
 
       def forward(name, reader)
-        reader.each_line { |text| output.line(name, text.chomp) }
+        reader.each_line do |text|
+          output.line(name, text.chomp)
+        end
       rescue IOError
         nil
       ensure

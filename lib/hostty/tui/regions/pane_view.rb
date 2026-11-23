@@ -11,7 +11,10 @@ module Hostty
 
         def rows
           pane = tabs.selected
-          pane.lines.each_with_index.map { |cells, row| line_text(cells, pane.selected_columns(row, cells.size)) }
+
+          pane.lines.each_with_index.map do |cells, row|
+            line_text(cells, pane.selected_columns(row, cells.size))
+          end
         end
 
         def press(row:, col:)

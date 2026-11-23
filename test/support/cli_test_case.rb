@@ -34,13 +34,25 @@ class CLITestCase < Minitest::Test
   end
 
   def lines_for(name)
-    stdout.string.lines.grep(/ #{name}\s+\| /).map { |line| line.split("| ", 2).last.chomp }
+    stdout
+      .string
+      .lines
+      .grep(/ #{name}\s+\| /)
+      .map do |line|
+        line.split("| ", 2).last.chomp
+      end
   end
 
   def free_port
     loop do
       port = rand(20_000..40_000)
-      return port if [port, port + 1, port + 100, port + 200].all? { |candidate| bindable?(candidate) }
+      return port if every_used_port_bindable?(port)
+    end
+  end
+
+  def every_used_port_bindable?(port)
+    [port, port + 1, port + 100, port + 200].all? do |candidate|
+      bindable?(candidate)
     end
   end
 
@@ -51,8 +63,8 @@ class CLITestCase < Minitest::Test
     false
   end
 
-  def hold_port(port)
-    server = TCPServer.new("0.0.0.0", port)
+  def hold_port(port, host: "0.0.0.0")
+    server = TCPServer.new(host, port)
     yield
   ensure
     server&.close

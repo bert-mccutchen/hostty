@@ -45,10 +45,20 @@ Hostty prints each step:
 12:10:00 hostty | jobs exited with code 143.
 ```
 
-When a process does not exit in time:
+When a process is slow to exit, hostty names it and counts down:
 
 ```text
-12:10:10 hostty | Killing the processes that are still running.
+12:10:01 hostty | Waiting for jobs, 9 seconds left. Press Ctrl-C to send KILL now.
+12:10:04 hostty | Waiting for jobs, 6 seconds left. Press Ctrl-C to send KILL now.
+12:10:07 hostty | Waiting for jobs, 3 seconds left. Press Ctrl-C to send KILL now.
+12:10:10 hostty | Killing jobs.
+```
+
+When a process still runs 5 seconds after KILL, hostty exits without it:
+
+```text
+12:10:11 hostty | Waiting for jobs, 4 seconds left. Press Ctrl-C to stop waiting.
+12:10:15 hostty | Stopped waiting. Still running: jobs.
 ```
 
 The `--timeout` option sets the first wait. It defaults to 10 seconds. Give a slow process, such as Solid Queue finishing its running jobs, more time with a higher value.

@@ -8,7 +8,9 @@ module Hostty
       end
 
       def decode(bytes)
-        styles.fetch(bytes) { style(*bytes.unpack("C12S<")) }
+        styles.fetch(bytes) do
+          style(*bytes.unpack("C12S<"))
+        end
       end
 
       private

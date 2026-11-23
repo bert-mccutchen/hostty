@@ -13,7 +13,10 @@ module Hostty
 
       def start
         @pid = launch.start(process)
-        Thread.new(pid) { |child_pid| events.push(ProcessExited.new(name:, status: Process.wait2(child_pid).last)) }
+
+        Thread.new(pid) do |child_pid|
+          events.push(ProcessExited.new(name:, status: Process.wait2(child_pid).last))
+        end
       end
 
       def signal(signal_name)

@@ -9,7 +9,10 @@ module Hostty
 
       def react(timeout:)
         readable = Array(IO.select(sources.filter_map(&:io), nil, nil, timeout)&.first)
-        sources.each { |source| source.read if readable.include?(source.io) }
+
+        sources.each do |source|
+          source.read if readable.include?(source.io)
+        end
       end
 
       private

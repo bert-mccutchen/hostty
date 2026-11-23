@@ -55,7 +55,9 @@ module Hostty
       end
 
       def mods(mouse)
-        Library::MODS.sum { |name, bit| mouse.public_send(:"#{name}?") ? bit : 0 }
+        Library::MODS.sum do |name, bit|
+          mouse.public_send(:"#{name}?") ? bit : 0
+        end
       end
 
       def position(mouse)

@@ -19,7 +19,10 @@ module Hostty
           return if data == :wait_readable
           return outcome.decide(0) unless data
 
-          input.parse(data).each { |event| event.apply(controls) }
+          input.parse(data).each do |event|
+            event.apply(controls)
+          end
+
           outcome.decide(0) if controls.quit?
           canvas.invalidate
         end

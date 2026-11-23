@@ -73,7 +73,11 @@ module Hostty
 
     def start
       load_ghostty if tui?
-      config.notices.each { |notice| output.notice(notice) }
+
+      config.notices.each do |notice|
+        output.notice(notice)
+      end
+
       Domains.new(processes: config.processes, nginx:, output:).add
       Manager.new(processes: config.processes, front_end:, output:, stop_timeout: options[:timeout]).run
     end

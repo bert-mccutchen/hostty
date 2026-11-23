@@ -58,9 +58,15 @@ module Hostty
           button: (code.anybits?(64) ? WHEEL_BUTTONS : BUTTONS)[code & 0b11],
           row: match[3].to_i - 1,
           col: match[2].to_i - 1,
-          modifiers: MODIFIER_BITS.filter_map { |name, bit| name if code.anybits?(bit) }
+          modifiers: mouse_modifiers(code)
         )
         Events::MouseReport.new(mouse: event) if event.button
+      end
+
+      def mouse_modifiers(code)
+        MODIFIER_BITS.filter_map do |name, bit|
+          name if code.anybits?(bit)
+        end
       end
 
       def mouse_action(code, final)

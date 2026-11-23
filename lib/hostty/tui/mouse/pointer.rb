@@ -19,7 +19,10 @@ module Hostty
         end
 
         def tick
-          @state = state.tick(target) { canvas.invalidate }
+          @state =
+            state.tick(target) do
+              canvas.invalidate
+            end
         end
 
         private

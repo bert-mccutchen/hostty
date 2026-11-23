@@ -45,6 +45,14 @@ module Hostty
         nil
       end
 
+      def discard
+        if reader
+          Thread.new(reader) do |io|
+            discard_until_closed(io)
+          end
+        end
+      end
+
       def close
         [reader, writer].compact.reject(&:closed?).each(&:close)
         @reader = nil
@@ -57,6 +65,12 @@ module Hostty
       private_constant :READ_SIZE
 
       attr_reader :writer
+
+      def discard_until_closed(io)
+        nil while io.readpartial(READ_SIZE)
+      rescue Errno::EIO, IOError
+        nil
+      end
     end
   end
 end

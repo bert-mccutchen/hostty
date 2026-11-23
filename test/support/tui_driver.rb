@@ -10,7 +10,10 @@ class TuiDriver
     @screen = Hostty::Ghostty::Screen.new(rows:, cols:)
     @mutex = Mutex.new
     @changed = ConditionVariable.new
-    @reader = Thread.new { read_screen }
+
+    @reader = Thread.new do
+      read_screen
+    end
   end
 
   def type(text)
@@ -58,19 +61,27 @@ class TuiDriver
   end
 
   def wait_for_highlight(row, col)
-    wait_until("a highlight at row #{row}, column #{col}") { screen.lines[row][col].style.inverse }
+    wait_until("a highlight at row #{row}, column #{col}") do
+      screen.lines[row][col].style.inverse
+    end
   end
 
   def wait_for_color(row, col, color)
-    wait_until("color #{color} at row #{row}, column #{col}") { screen.lines[row][col].style.fg == color }
+    wait_until("color #{color} at row #{row}, column #{col}") do
+      screen.lines[row][col].style.fg == color
+    end
   end
 
   def wait_for_text(text, count: 1)
-    wait_until("#{text.inspect} #{count} times") { visible_text.scan(text).size >= count }
+    wait_until("#{text.inspect} #{count} times") do
+      visible_text.scan(text).size >= count
+    end
   end
 
   def screen_text
-    mutex.synchronize { visible_text }
+    mutex.synchronize do
+      visible_text
+    end
   end
 
   def row_text(row)
@@ -78,7 +89,9 @@ class TuiDriver
   end
 
   def cell(row, col)
-    mutex.synchronize { screen.lines[row][col] }
+    mutex.synchronize do
+      screen.lines[row][col]
+    end
   end
 
   def close
@@ -108,7 +121,12 @@ class TuiDriver
   end
 
   def visible_text
-    screen.lines.map { |cells| cells.map(&:char).join.rstrip }.join("\n")
+    screen
+      .lines
+      .map do |cells|
+        cells.map(&:char).join.rstrip
+      end
+      .join("\n")
   end
 
   def read_screen

@@ -21,7 +21,9 @@ module Hostty
         attr_reader :name, :settings
 
         def invalid_keys
-          @invalid_keys ||= KEYS.select { |key| settings.key?(key) && !Text.new(settings[key]).present? }
+          @invalid_keys ||= KEYS.select do |key|
+            settings.key?(key) && !Text.new(settings[key]).present?
+          end
         end
       end
     end

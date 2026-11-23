@@ -19,7 +19,9 @@ module Hostty
       end
 
       def self.blank(style = Style.plain)
-        blanks.fetch(style.bg) { new(char: " ", style: style.background) }
+        blanks.fetch(style.bg) do
+          new(char: " ", style: style.background)
+        end
       end
 
       def self.blanks

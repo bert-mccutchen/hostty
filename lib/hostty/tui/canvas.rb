@@ -26,7 +26,11 @@ module Hostty
       end
 
       def tick
-        frame.fire { draw } if dirty?
+        if dirty?
+          frame.fire do
+            draw
+          end
+        end
       end
 
       private

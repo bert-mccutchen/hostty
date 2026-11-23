@@ -16,7 +16,9 @@ module Hostty
       end
 
       def pop(timeout: nil)
-        queue.pop(timeout:)&.tap { wakeup_io.read_nonblock(1, exception: false) }
+        queue.pop(timeout:)&.tap do
+          wakeup_io.read_nonblock(1, exception: false)
+        end
       end
 
       private

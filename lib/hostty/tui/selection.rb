@@ -28,7 +28,9 @@ module Hostty
       end
 
       def text(lines)
-        rows.map { |row| row_text(lines[row] || [], row) }.join("\n")
+        rows
+          .map { |row| row_text(lines[row] || [], row) }
+          .join("\n")
       end
 
       private

@@ -15,7 +15,11 @@ module Hostty
       end
 
       def tick
-        timer.fire { flash } if ringing?
+        if ringing?
+          timer.fire do
+            flash
+          end
+        end
       end
 
       private

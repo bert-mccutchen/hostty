@@ -5,14 +5,20 @@ module Hostty
     def initialize(names:, io:)
       @io = io
       @width = [*names, NOTICE_NAME].map(&:length).max
-      @colors = names.each_with_index.to_h { |name, index| [name, COLORS[index % COLORS.size]] }
+
+      @colors = names.each_with_index.to_h do |name, index|
+        [name, COLORS[index % COLORS.size]]
+      end
+
       @mutex = Mutex.new
     end
 
     def line(name, text)
       prefix = "#{Time.now.strftime("%H:%M:%S")} #{name.ljust(width)} |"
 
-      mutex.synchronize { io.puts("#{colorize(prefix, colors.fetch(name, NOTICE_COLOR))} #{text}") }
+      mutex.synchronize do
+        io.puts("#{colorize(prefix, colors.fetch(name, NOTICE_COLOR))} #{text}")
+      end
     end
 
     def notice(text)

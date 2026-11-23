@@ -16,7 +16,9 @@ module Hostty
       def cursor = regions.lazy.filter_map(&:cursor).first
 
       def press(row:, col:, &)
-        regions.any? { |region| region.press(row:, col:, &) }
+        regions.any? do |region|
+          region.press(row:, col:, &)
+        end
       end
 
       private

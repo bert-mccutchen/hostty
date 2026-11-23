@@ -54,6 +54,7 @@ module Hostty
 
       def narrow(text, style_bytes)
         cells_by_text = narrow_cells.fetch(style_bytes) { {} }
+
         cells_by_text[text] ||= Terminal::Cell.new(char: text, style: style_decoder.decode(style_bytes))
       end
 

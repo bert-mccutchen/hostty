@@ -10,7 +10,11 @@ module Hostty
       def initialize(fg: nil, bg: nil, **flags)
         @fg = fg
         @bg = bg
-        FLAG_CODES.each_key { |flag| instance_variable_set(:"@#{flag}", flags.fetch(flag, false)) }
+
+        FLAG_CODES.each_key do |flag|
+          instance_variable_set(:"@#{flag}", flags.fetch(flag, false))
+        end
+
         freeze
       end
 
@@ -23,7 +27,9 @@ module Hostty
       def hash = to_h.hash
 
       def to_h
-        ATTRIBUTES.to_h { |attribute| [attribute, public_send(attribute)] }
+        ATTRIBUTES.to_h do |attribute|
+          [attribute, public_send(attribute)]
+        end
       end
 
       def background
@@ -32,7 +38,11 @@ module Hostty
 
       def sgr
         codes = [0]
-        FLAG_CODES.each { |flag, code| codes << code if public_send(flag) }
+
+        FLAG_CODES.each do |flag, code|
+          codes << code if public_send(flag)
+        end
+
         codes.concat(color_codes(fg, base: 30, extended: 38))
         codes.concat(color_codes(bg, base: 40, extended: 48))
         "\e[#{codes.join(";")}m"
@@ -43,11 +53,18 @@ module Hostty
       end
 
       def self.shared(attributes)
-        styles.fetch(attributes.values) { new(**attributes) }
+        styles.fetch(attributes.values) do
+          new(**attributes)
+        end
       end
 
       def self.styles
-        @styles ||= Flyweight.new.tap { |styles| styles.fetch(plain.to_h.values) { plain } }
+        @styles ||=
+          Flyweight.new.tap do |styles|
+            styles.fetch(plain.to_h.values) do
+              plain
+            end
+          end
       end
       private_class_method :styles
 

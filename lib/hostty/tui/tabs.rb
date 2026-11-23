@@ -29,7 +29,9 @@ module Hostty
       end
 
       def named(name)
-        find { |pane| pane.name == name }
+        find do |pane|
+          pane.name == name
+        end
       end
 
       private

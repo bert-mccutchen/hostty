@@ -12,7 +12,10 @@ module Hostty
       end
 
       def wait(manager)
-        manager.next_event.tap { |event| event.announce(output) }.exit_code
+        manager
+          .next_event
+          .tap { |event| event.announce(output) }
+          .exit_code
       end
 
       private

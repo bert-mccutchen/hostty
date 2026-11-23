@@ -7,7 +7,11 @@ module Hostty
       @output = output
       @stop_timeout = stop_timeout
       @events = Events.new
-      @children = processes.to_h { |process| [process.name, build_child(process)] }
+      @children =
+        processes.to_h do |process|
+          [process.name, build_child(process)]
+        end
+
       @running = {}
     end
 
@@ -15,7 +19,10 @@ module Hostty
 
     def run
       with_signal_traps do
-        children.each_key { |name| start(name) }
+        children.each_key do |name|
+          start(name)
+        end
+
         front_end.wait(self)
       ensure
         stop
@@ -47,56 +54,79 @@ module Hostty
 
     attr_reader :front_end, :output, :stop_timeout, :events, :children, :running
 
+    def running_names = running.keys.join(", ")
+
     def build_child(process)
       Child.new(process:, launch: front_end.launch_for(process), events:)
     end
 
+    def trap_signal(signal)
+      trap(signal) do
+        events.push(SignalReceived.new(signal:))
+      end
+    end
+
     def with_signal_traps
-      previous_handlers = SIGNALS.to_h { |signal| [signal, trap(signal) { events.push(SignalReceived.new(signal:)) }] }
+      previous_handlers = SIGNALS.to_h do |signal|
+        [signal, trap_signal(signal)]
+      end
+
       yield
     ensure
-      previous_handlers&.each { |signal, handler| trap(signal, handler || "DEFAULT") }
+      previous_handlers&.each do |signal, handler|
+        trap(signal, handler || "DEFAULT")
+      end
     end
 
     def receive(timeout: nil)
-      next_event(timeout:)&.tap { |event| event.announce(output) }
+      next_event(timeout:)&.tap do |event|
+        event.announce(output)
+      end
     end
 
     def stop
       unless running.empty?
         output.notice("Stopping all processes.")
         signal_children("TERM")
-        kill_children unless wait_for_children(timeout: stop_timeout)
+        kill_children unless wait_for_children(timeout: stop_timeout, hint: "Press Ctrl-C to send KILL now.")
       end
 
       children.each_value(&:finish)
     end
 
-    def wait_for_children(timeout:)
-      deadline = clock + timeout
+    def wait_for_children(timeout:, hint:)
+      countdown = Countdown.new(seconds: timeout)
 
       until running.empty?
-        event = receive(timeout: (deadline - clock).clamp(0, timeout))
-        return false if event.nil? || event.interrupt?
+        event = receive(timeout: countdown.next_wait)
+        return false if event&.interrupt?
+        next if event
+        return false if countdown.expired?
+
+        countdown.remind do |seconds|
+          output.notice("Waiting for #{running_names}, #{seconds_left(seconds)}. #{hint}")
+        end
       end
 
       true
     end
 
     def kill_children
-      output.notice("Killing the processes that are still running.")
+      output.notice("Killing #{running_names}.")
       signal_children("KILL")
-      return if wait_for_children(timeout: KILL_TIMEOUT)
+      return if wait_for_children(timeout: KILL_TIMEOUT, hint: "Press Ctrl-C to stop waiting.")
 
-      output.notice("Stopped waiting for #{running.keys.join(", ")}.")
+      output.notice("Stopped waiting. Still running: #{running_names}.")
+    end
+
+    def seconds_left(seconds)
+      "#{seconds} #{(seconds == 1) ? "second" : "seconds"} left"
     end
 
     def signal_children(signal_name)
-      children.each_value { |child| child.signal(signal_name) }
-    end
-
-    def clock
-      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      children.each_value do |child|
+        child.signal(signal_name)
+      end
     end
   end
 end

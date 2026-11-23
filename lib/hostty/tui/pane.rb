@@ -32,6 +32,10 @@ module Hostty
         pty.start(process, rows:, cols:)
       end
 
+      def discard_output
+        pty.discard
+      end
+
       def finish
         pty.close
       end
@@ -126,7 +130,10 @@ module Hostty
 
         range.step(rows).each_with_object({}) do |first, lines|
           page_offset = (size - first).clamp(0, size)
-          screen.lines(offset: page_offset).each_with_index { |cells, index| lines[size - page_offset + index] = cells }
+
+          screen.lines(offset: page_offset).each_with_index do |cells, index|
+            lines[size - page_offset + index] = cells
+          end
         end
       end
     end

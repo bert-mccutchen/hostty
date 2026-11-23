@@ -15,7 +15,11 @@ module Hostty
       def render(display)
         rows = display.rows
         frame = +""
-        rows.each_with_index { |row, index| frame << "\e[#{index + 1};1H#{row}" unless @previous[index] == row }
+
+        rows.each_with_index do |row, index|
+          frame << "\e[#{index + 1};1H#{row}" unless @previous[index] == row
+        end
+
         @previous = rows
         io.write(frame << cursor(display.cursor))
       end

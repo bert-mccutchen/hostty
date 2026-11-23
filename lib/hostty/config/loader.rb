@@ -71,7 +71,10 @@ module Hostty
       end
 
       def processes
-        @processes ||= definitions.map { |definition| definition.build(port: ports.fetch(definition)) }
+        @processes ||=
+          definitions.map do |definition|
+            definition.build(port: ports.fetch(definition))
+          end
       end
     end
   end

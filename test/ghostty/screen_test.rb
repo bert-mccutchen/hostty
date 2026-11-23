@@ -39,7 +39,14 @@ class GhosttyScreenTest < Minitest::Test
   end
 
   def test_keeps_lines_that_scroll_off_the_top_as_scrollback
-    feed((1..6).map { |number| "line #{number}" }.join("\r\n"))
+    numbered_lines =
+      (1..6)
+        .map do |number|
+          "line #{number}"
+        end
+        .join("\r\n")
+
+    feed(numbered_lines)
 
     assert_equal ["line 3", "line 4", "line 5", "line 6"], text
     assert_equal 2, @screen.scrollback_size
@@ -76,7 +83,12 @@ class GhosttyScreenTest < Minitest::Test
   def test_fills_an_erased_line_with_the_background_color
     feed("\e[44m\e[K\e[0m")
 
-    assert_equal [4] * 10, @screen.lines.first.map { |cell| cell.style.bg }
+    backgrounds =
+      @screen.lines.first.map do |cell|
+        cell.style.bg
+      end
+
+    assert_equal [4] * 10, backgrounds
   end
 
   def test_switches_to_the_alternate_screen_and_back
@@ -171,6 +183,10 @@ class GhosttyScreenTest < Minitest::Test
   end
 
   def text(offset: 0)
-    @screen.lines(offset:).map { |cells| cells.map(&:char).join.rstrip }
+    @screen
+      .lines(offset:)
+      .map do |cells|
+        cells.map(&:char).join.rstrip
+      end
   end
 end

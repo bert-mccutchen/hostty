@@ -38,17 +38,25 @@ module Hostty
       def copy_with_command(text)
         return unless clipboard_command
 
-        IO.popen(clipboard_command, "w", err: File::NULL) { |pipe| pipe.write(text) }
+        IO.popen(clipboard_command, "w", err: File::NULL) do |pipe|
+          pipe.write(text)
+        end
       rescue SystemCallError, IOError
         nil
       end
 
       def clipboard_command
-        @clipboard_command ||= CLIPBOARD_COMMANDS.find { |command| installed?(command.first) }
+        @clipboard_command ||=
+          CLIPBOARD_COMMANDS.find do |command|
+            installed?(command.first)
+          end
       end
 
       def installed?(name)
-        ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).any? { |dir| File.executable?(File.join(dir, name)) }
+        ENV
+          .fetch("PATH", "")
+          .split(File::PATH_SEPARATOR)
+          .any? { |dir| File.executable?(File.join(dir, name)) }
       end
     end
   end

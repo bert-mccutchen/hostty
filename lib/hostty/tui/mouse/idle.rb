@@ -19,7 +19,10 @@ module Hostty
         def tick(_target) = self
 
         def press(event, target)
-          target.press(event) { |pointer| return Selecting.new(pointer:, clock:) }
+          target.press(event) do |pointer|
+            return Selecting.new(pointer:, clock:)
+          end
+
           self
         end
 

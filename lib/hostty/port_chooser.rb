@@ -25,7 +25,8 @@ module Hostty
 
     RANDOM_PORTS = 10_000..59_999
     MOVE_LIMIT = 100
-    private_constant :RANDOM_PORTS, :MOVE_LIMIT
+    LISTEN_HOSTS = %w[0.0.0.0 127.0.0.1 ::1].freeze
+    private_constant :RANDOM_PORTS, :MOVE_LIMIT, :LISTEN_HOSTS
 
     attr_reader :skip_used_ports, :random, :owners
 
@@ -34,10 +35,18 @@ module Hostty
     end
 
     def in_use?(port)
-      TCPServer.new("0.0.0.0", port).close
+      LISTEN_HOSTS.any? do |host|
+        bound_on?(host, port)
+      end
+    end
+
+    def bound_on?(host, port)
+      TCPServer.new(host, port).close
       false
     rescue Errno::EADDRINUSE, Errno::EACCES
       true
+    rescue Errno::EADDRNOTAVAIL
+      false
     end
 
     def claim(port, name)
@@ -45,9 +54,15 @@ module Hostty
       port
     end
 
+    def first_free_port(candidates)
+      candidates.find do |candidate|
+        free?(candidate)
+      end
+    end
+
     def next_free_port(name, port)
       candidates = (port + 1)..(port + MOVE_LIMIT)
-      candidates.find { |candidate| free?(candidate) } or
+      first_free_port(candidates) or
         raise ConfigError, "No free port for #{name} from #{candidates.begin} to #{candidates.end}."
     end
 

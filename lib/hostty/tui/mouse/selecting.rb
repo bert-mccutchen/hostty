@@ -17,7 +17,10 @@ module Hostty
         end
 
         def press(event, target)
-          target.press(event) { |point| @pointer = point }
+          target.press(event) do |point|
+            @pointer = point
+          end
+
           self
         end
 

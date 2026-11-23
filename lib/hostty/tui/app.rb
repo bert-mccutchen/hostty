@@ -14,14 +14,25 @@ module Hostty
       end
 
       def launch_for(process)
-        Pane.new(name: process.name, url: process.url, rows: layout.pane_rows, cols: layout.cols).tap { |pane| tabs.add(pane) }
+        Pane.new(name: process.name, url: process.url, rows: layout.pane_rows, cols: layout.cols).tap do |pane|
+          tabs.add(pane)
+        end
       end
 
       def wait(manager)
         @manager = manager
-        tabs.each { |pane| pane.subscribe(activity) }
-        with_terminal { cycle until outcome.decided? }
+
+        tabs.each do |pane|
+          pane.subscribe(activity)
+        end
+
+        with_terminal do
+          cycle until outcome.decided?
+        end
+
         outcome.exit_code
+      ensure
+        tabs.each(&:discard_output)
       end
 
       private

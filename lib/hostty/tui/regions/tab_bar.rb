@@ -40,7 +40,11 @@ module Hostty
 
         def selected = tabs.selected
 
-        def tabs_width(spans) = spans.sum { |span| span[:width] }
+        def tabs_width(spans)
+          spans.sum do |span|
+            span[:width]
+          end
+        end
 
         def tab_spans
           start = 0
@@ -49,7 +53,9 @@ module Hostty
             width = pane.name.length + 4
             next if start + width > layout.cols
 
-            {index:, pane:, start:, width:}.tap { start += width }
+            {index:, pane:, start:, width:}.tap do
+              start += width
+            end
           end
         end
 
@@ -62,7 +68,11 @@ module Hostty
         end
 
         def tab_row(spans, start)
-          text = spans.map { |span| tab_label(span[:pane]) }.join
+          text =
+            spans
+              .map { |span| tab_label(span[:pane]) }
+              .join
+
           return "#{text}#{Palette::BAR}#{" " * (layout.cols - tabs_width(spans))}#{Palette::RESET}" unless start
 
           "#{text}#{Palette::BAR}#{" " * (start - tabs_width(spans))}#{selected.url} #{Palette::RESET}"
@@ -80,7 +90,11 @@ module Hostty
         end
 
         def select_tab(spans, col)
-          span = spans.find { |candidate| (candidate[:start]...candidate[:start] + candidate[:width]).cover?(col) }
+          span =
+            spans.find do |candidate|
+              (candidate[:start]...candidate[:start] + candidate[:width]).cover?(col)
+            end
+
           return false unless span
 
           tabs.select_at(span[:index])

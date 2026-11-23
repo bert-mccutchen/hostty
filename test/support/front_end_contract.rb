@@ -18,7 +18,10 @@ module FrontEndContract
   def test_wait_returns_the_exit_code_of_a_stop_event
     launch
     manager.stop(exit_code: 7)
-    @waiter = Thread.new { front_end.wait(manager) }
+
+    @waiter = Thread.new do
+      front_end.wait(manager)
+    end
 
     assert @waiter.join(WAIT_TIMEOUT), "wait did not return after a stop event."
     assert_equal 7, @waiter.value
@@ -38,6 +41,8 @@ module FrontEndContract
   end
 
   def launch
-    front_end.launch_for(load_process("command" => "exec sleep 30")).tap { |launcher| launchers << launcher }
+    front_end.launch_for(load_process("command" => "exec sleep 30")).tap do |launcher|
+      launchers << launcher
+    end
   end
 end

@@ -90,7 +90,11 @@ module Hostty
       end
 
       def send_bells
-        @ring = FFI::Function.new(:void, %i[pointer pointer]) { |_terminal, _userdata| bell&.call }
+        @ring =
+          FFI::Function.new(:void, %i[pointer pointer]) do |_terminal, _userdata|
+            bell&.call
+          end
+
         Library.ghostty_terminal_set(terminal, Library::TERMINAL_OPT_BELL, @ring)
       end
 

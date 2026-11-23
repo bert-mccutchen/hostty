@@ -9,7 +9,9 @@ class CLIPortsTest < CLITestCase
         web: "echo started"
     YAML
 
-    hold_port(base_port) { assert_equal 1, hostty }
+    hold_port(base_port) do
+      assert_equal 1, hostty
+    end
 
     assert_equal "hostty: Port #{base_port} for web is in use. Free the port, or set skip_used_ports to true.\n", stderr.string
     refute_includes stdout.string, "started"
@@ -22,10 +24,28 @@ class CLIPortsTest < CLITestCase
         web: "echo port=$PORT"
     YAML
 
-    hold_port(base_port) { assert_equal 0, hostty }
+    hold_port(base_port) do
+      assert_equal 0, hostty
+    end
 
     assert_includes lines_for("hostty"), "Port #{base_port} for web is in use. web uses #{base_port + 1}."
     assert_equal ["port=#{base_port + 1}"], lines_for("web")
+  end
+
+  def test_moves_past_a_port_held_on_localhost_only
+    write_config(<<~YAML)
+      skip_used_ports: true
+      processes:
+        web: "echo port=$PORT"
+    YAML
+
+    hold_port(base_port, host: "127.0.0.1") do
+      hold_port(base_port + 1, host: "::1") do
+        assert_equal 0, hostty
+      end
+    end
+
+    assert_equal ["port=#{base_port + 2}"], lines_for("web")
   end
 
   def test_never_moves_a_port_set_on_the_process
@@ -37,7 +57,9 @@ class CLIPortsTest < CLITestCase
           port: #{base_port + 200}
     YAML
 
-    hold_port(base_port + 200) { assert_equal 1, hostty }
+    hold_port(base_port + 200) do
+      assert_equal 1, hostty
+    end
 
     assert_equal "hostty: Port #{base_port + 200} for web is in use. Free the port, or change the port of web.\n", stderr.string
   end

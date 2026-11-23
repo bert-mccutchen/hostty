@@ -58,7 +58,10 @@ module LauncherContract
 
   def reap(pid)
     @pid = pid
-    Process.wait2(pid).last.tap { @pid = nil }
+
+    Process.wait2(pid).last.tap do
+      @pid = nil
+    end
   end
 
   def finish
